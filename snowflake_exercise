@@ -1,0 +1,373 @@
+SHOW STAGES IN SCHEMA airbnb.dev;
+CREATE or replace STAGE airbnb.dev.marketing_anonymized_stage;
+delete from airbnb.dev.marketing_anonymized_stage
+
+LIST @marketing_anonymized_stage;
+REMOVE @marketing_cloud_emails_anonymized;
+
+
+
+drop table public.marketing_cloud_emails_anonymized
+
+
+
+show tables
+
+select * from snowflake.account_usage.table_storage_metrics limit 100;
+
+select * from snowflake_sample_data.tpch_sf1000.customer limit 100
+
+select * from airbnb.raw.raw_listings limit 100
+select * from airbnb.raw.raw_hosts limit 100
+select * from airbnb.raw.raw_reviews limit 100
+
+select * from airbnb.dev.fct_reviews where listing_id= 3176 order by review_date desc limit 100
+
+insert into airbnb.raw.raw_reviews values (3176,current_timestamp(),'Zoltan','excellent stay!','positive');
+
+select * from airbnb.dev.seed_full_moon_dates
+
+DROP VIEW AIRBNB.DEV.SRC_HOSTS;
+DROP VIEW AIRBNB.DEV.SRC_LISTINGS;
+DROP VIEW AIRBNB.DEV.SRC_REVIEWS;
+
+UPDATE AIRBNB.RAW.RAW_LISTINGS SET MINIMUM_NIGHTS=30,
+updated_at=CURRENT_TIMESTAMP() WHERE ID=3176;
+SELECT * FROM AIRBNB.DEV.SCD_RAW_LISTINGS WHERE ID=3176;
+
+select host_id,count(*) from AIRBNB.DEV.dim_listings_w_hosts group by 1 order by 2 desc limit 100
+
+CREATE OR REPLACE NETWORK POLICY cube_cloud_policy
+  ALLOWED_IP_LIST = (
+    '18.118.80.17',  -- Replace with Cube Cloud IP 1
+    '3.138.164.185',   -- Replace with Cube Cloud IP 2
+    '18.119.82.109',
+    '3.137.72.146',
+    '18.119.84.204',
+    '18.119.153.96'
+  )
+  BLOCKED_IP_LIST = ();
+
+  CREATE USER cube_user
+  PASSWORD = 'Sri@hr123456789'  -- or use key pair auth
+  DEFAULT_ROLE = cube_role
+  MUST_CHANGE_PASSWORD = FALSE;
+
+  ALTER USER cube_user SET NETWORK_POLICY = cube_cloud_policy;
+  CREATE ROLE IF NOT EXISTS CUBE_ROLE;
+  GRANT ROLE CUBE_ROLE TO USER cube_user;
+  ALTER USER cube_user SET DEFAULT_ROLE = CUBE_ROLE;
+
+
+
+
+GRANT ALL ON WAREHOUSE compute_wh TO ROLE cube_role;
+GRANT ALL ON DATABASE AIRBNB TO ROLE cube_role;
+GRANT ALL ON ALL SCHEMAS IN DATABASE AIRBNB TO ROLE cube_role;
+GRANT ALL ON FUTURE SCHEMAS IN DATABASE AIRBNB TO ROLE cube_role;
+
+GRANT ALL ON ALL TABLES IN SCHEMA AIRBNB.DEV TO ROLE cube_role;
+GRANT ALL ON FUTURE TABLES IN SCHEMA AIRBNB.DEV TO ROLE cube_role;
+
+
+select count(*) from 
+
+CREATE TABLE airbnb.dev.line_items
+( id INTEGER,
+  order_id INTEGER,
+  product_id INTEGER,
+  price INTEGER,
+  created_at TIMESTAMP
+);
+
+COPY INTO airbnb.dev.line_items (id, order_id, product_id, price, created_at)
+FROM 's3://cube-tutorial/line_items.csv'
+FILE_FORMAT = (TYPE = 'CSV' FIELD_DELIMITER = ',' SKIP_HEADER = 1);
+
+
+CREATE TABLE airbnb.dev.orders
+( id INTEGER,
+  user_id INTEGER,
+  status VARCHAR,
+  completed_at TIMESTAMP,
+  created_at TIMESTAMP
+);
+
+COPY INTO airbnb.dev.orders (id, user_id, status, completed_at, created_at)
+FROM 's3://cube-tutorial/orders.csv'
+FILE_FORMAT = (TYPE = 'CSV' FIELD_DELIMITER = ',' SKIP_HEADER = 1);
+
+CREATE TABLE airbnb.dev.users
+( id INTEGER,
+  city VARCHAR,
+  age INTEGER,
+  gender VARCHAR,
+  state VARCHAR,
+  first_name VARCHAR,
+  last_name VARCHAR,
+  created_at TIMESTAMP
+);
+
+
+COPY INTO airbnb.dev.users (id, city, age, gender, state, first_name, last_name, created_at)
+FROM 's3://cube-tutorial/users.csv'
+FILE_FORMAT = (TYPE = 'CSV' FIELD_DELIMITER = ',' SKIP_HEADER = 1);
+
+
+
+CREATE TABLE airbnb.dev.products
+( id INTEGER,
+  name VARCHAR,
+  product_category VARCHAR,
+  created_at TIMESTAMP
+);
+
+COPY INTO airbnb.dev.products (id, name, created_at, product_category)
+FROM 's3://cube-tutorial/products.csv'
+FILE_FORMAT = (TYPE = 'CSV' FIELD_DELIMITER = ',' SKIP_HEADER = 1);
+
+
+
+
+GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE_SAMPLE_DATA TO ROLE cube_role;
+
+USE ROLE cube_role;
+SHOW TABLES IN DATABASE SNOWFLAKE_SAMPLE_DATA;
+
+GRANT ALL ON DATABASE SNOWFLAKE_SAMPLE_DATA TO ROLE cube_role;
+GRANT ALL ON ALL SCHEMAS IN DATABASE SNOWFLAKE_SAMPLE_DATA TO ROLE cube_role;
+GRANT ALL ON FUTURE SCHEMAS IN DATABASE AIRBNB TO ROLE cube_role;
+
+GRANT ALL ON ALL TABLES IN SCHEMA AIRBNB.DEV TO ROLE cube_role;
+GRANT ALL ON FUTURE TABLES IN SCHEMA AIRBNB.DEV TO ROLE cube_role;
+
+**********************************************************************************
+**********************************************************************************
+SELECT o_custkey, o_orderdate FROM SNOWFLAKE_SAMPLE_DATA.TPCH_SF1000.orders limit 100
+
+SELECT distinct o_orderstatus FROM SNOWFLAKE_SAMPLE_DATA.TPCH_SF1000.orders limit 100
+
+
+select * from airbnb.dev.dim_hosts_cleansed limit 10;
+select * from airbnb.dev.dim_listings_cleansed limit 10;
+
+select * from airbnb.dev.fct_reviews limit 10;
+
+
+**********************************************************************************
+ show shares
+ show managed accounts
+
+*******************************snowplow*******************************************
+
+select count(*) from snowplow_digital_analytics.shared_data.snowplow_unified_users limit 100;
+select count(*) from snowplow_digital_analytics.shared_data.snowplow_web_users limit 100;
+desc table snowplow_digital_analytics.shared_data.snowplow_web_users
+
+
+**********************************************************************************
+
+
+---- SIZE_LIMIT ----
+
+// Prepare database & table
+CREATE OR REPLACE DATABASE COPY_DB;
+
+CREATE OR REPLACE TABLE  COPY_DB.PUBLIC.ORDERS (
+    ORDER_ID VARCHAR(30),
+    AMOUNT VARCHAR(30),
+    PROFIT INT,
+    QUANTITY INT,
+    CATEGORY VARCHAR(30),
+    SUBCATEGORY VARCHAR(30));
+    
+    
+// Prepare stage object
+CREATE OR REPLACE STAGE COPY_DB.PUBLIC.aws_stage_copy
+    url='s3://snowflakebucket-copyoption/size/';
+    
+    
+// List files in stage
+LIST @aws_stage_copy;
+
+
+//Load data using copy command
+COPY INTO COPY_DB.PUBLIC.ORDERS
+    FROM @aws_stage_copy
+    file_format= (type = csv field_delimiter=',' skip_header=1)
+    pattern='.*Order.*'
+    SIZE_LIMIT=60000;
+
+
+
+
+
+---- RETURN_FAILED_ONLY ----
+
+
+
+CREATE OR REPLACE TABLE  COPY_DB.PUBLIC.ORDERS (
+    ORDER_ID VARCHAR(30),
+    AMOUNT VARCHAR(30),
+    PROFIT INT,
+    QUANTITY INT,
+    CATEGORY VARCHAR(30),
+    SUBCATEGORY VARCHAR(30));
+
+// Prepare stage object
+CREATE OR REPLACE STAGE COPY_DB.PUBLIC.aws_stage_copy
+    url='s3://snowflakebucket-copyoption/returnfailed/';
+  
+LIST @COPY_DB.PUBLIC.aws_stage_copy;
+  
+    
+ //Load data using copy command
+COPY INTO COPY_DB.PUBLIC.ORDERS
+    FROM @aws_stage_copy
+    file_format= (type = csv field_delimiter=',' skip_header=1)
+    pattern='.*Order.*'
+    RETURN_FAILED_ONLY = TRUE;
+    
+    
+    
+COPY INTO COPY_DB.PUBLIC.ORDERS
+    FROM @aws_stage_copy
+    file_format= (type = csv field_delimiter=',' skip_header=1)
+    pattern='.*Order.*'
+    ON_ERROR =CONTINUE
+    RETURN_FAILED_ONLY = TRUE;
+
+
+// Default = FALSE
+
+CREATE OR REPLACE TABLE  COPY_DB.PUBLIC.ORDERS (
+    ORDER_ID VARCHAR(30),
+    AMOUNT VARCHAR(30),
+    PROFIT INT,
+    QUANTITY INT,
+    CATEGORY VARCHAR(30),
+    SUBCATEGORY VARCHAR(30));
+
+
+COPY INTO COPY_DB.PUBLIC.ORDERS
+    FROM @aws_stage_copy
+    file_format= (type = csv field_delimiter=',' skip_header=1)
+    pattern='.*Order.*'
+    ON_ERROR =CONTINUE;
+
+
+
+
+
+    ---- TRUNCATECOLUMNS ----
+
+
+
+CREATE OR REPLACE TABLE  COPY_DB.PUBLIC.ORDERS (
+    ORDER_ID VARCHAR(30),
+    AMOUNT VARCHAR(30),
+    PROFIT INT,
+    QUANTITY INT,
+    CATEGORY VARCHAR(10),
+    SUBCATEGORY VARCHAR(30));
+
+// Prepare stage object
+CREATE OR REPLACE STAGE COPY_DB.PUBLIC.aws_stage_copy
+    url='s3://snowflakebucket-copyoption/size/';
+  
+LIST @COPY_DB.PUBLIC.aws_stage_copy;
+  
+    
+ //Load data using copy command
+COPY INTO COPY_DB.PUBLIC.ORDERS
+    FROM @aws_stage_copy
+    file_format= (type = csv field_delimiter=',' skip_header=1)
+    pattern='.*Order.*';
+
+
+COPY INTO COPY_DB.PUBLIC.ORDERS
+    FROM @aws_stage_copy
+    file_format= (type = csv field_delimiter=',' skip_header=1)
+    pattern='.*Order.*'
+    TRUNCATECOLUMNS = true; 
+    
+    
+SELECT * FROM ORDERS;  
+
+
+
+
+---- FORCE ----
+
+
+
+CREATE OR REPLACE TABLE  COPY_DB.PUBLIC.ORDERS (
+    ORDER_ID VARCHAR(30),
+    AMOUNT VARCHAR(30),
+    PROFIT INT,
+    QUANTITY INT,
+    CATEGORY VARCHAR(30),
+    SUBCATEGORY VARCHAR(30));
+
+// Prepare stage object
+CREATE OR REPLACE STAGE COPY_DB.PUBLIC.aws_stage_copy
+    url='s3://snowflakebucket-copyoption/size/';
+  
+LIST @COPY_DB.PUBLIC.aws_stage_copy;
+  
+    
+ //Load data using copy command
+COPY INTO COPY_DB.PUBLIC.ORDERS
+    FROM @aws_stage_copy
+    file_format= (type = csv field_delimiter=',' skip_header=1)
+    pattern='.*Order.*';
+
+// Not possible to load file that have been loaded and data has not been modified
+COPY INTO COPY_DB.PUBLIC.ORDERS
+    FROM @aws_stage_copy
+    file_format= (type = csv field_delimiter=',' skip_header=1)
+    pattern='.*Order.*';
+   
+
+SELECT * FROM ORDERS;    
+
+
+// Using the FORCE option
+
+COPY INTO COPY_DB.PUBLIC.ORDERS
+    FROM @aws_stage_copy
+    file_format= (type = csv field_delimiter=',' skip_header=1)
+    pattern='.*Order.*'
+    FORCE = TRUE;
+    
+
+
+-- Query load history within a database --
+
+USE COPY_DB;
+
+SELECT * FROM information_schema.load_history;
+
+-- Query load history gloabally from SNOWFLAKE database --
+
+
+SELECT * FROM snowflake.account_usage.load_history;
+
+
+// Filter on specific table & schema
+SELECT * FROM snowflake.account_usage.load_history
+  where schema_name='PUBLIC' and
+  table_name='ORDERS';
+  
+  
+// Filter on specific table & schema
+SELECT * FROM snowflake.account_usage.load_history
+  where schema_name='PUBLIC' and
+  table_name='ORDERS' and
+  error_count > 0;
+  
+  
+// Filter on specific table & schema
+SELECT * FROM snowflake.account_usage.load_history
+WHERE DATE(LAST_LOAD_TIME) <= DATEADD(days,-1,CURRENT_DATE);
+
